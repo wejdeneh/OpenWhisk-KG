@@ -1,0 +1,165 @@
+# OpenWhisk Deployment Manifest
+packages:
+  - name: qse
+    version: 1.0
+    license: Apache-2.0
+    dependencies:
+      - redis
+      - minio
+    
+    actions:
+      - name: orchestrator
+        runtime: java:8
+        main: com.qse.actions.OrchestratorAction
+        code: target/qse-openwhisk-1.0-SNAPSHOT.jar
+        web-export: true
+        memory: 512
+        timeout: 300000
+        parameters:
+          - name: REDIS_HOST
+            value: ${REDIS_HOST}
+          - name: MINIO_ENDPOINT
+            value: ${MINIO_ENDPOINT}
+          - name: MINIO_ACCESS_KEY
+            value: ${MINIO_ACCESS_KEY}
+          - name: MINIO_SECRET_KEY
+            value: ${MINIO_SECRET_KEY}
+      
+      - name: entity-extraction
+        runtime: java:8
+        main: com.qse.actions.EntityExtractionAction
+        code: target/qse-openwhisk-1.0-SNAPSHOT.jar
+        memory: 1024
+        timeout: 600000
+        parameters:
+          - name: REDIS_HOST
+            value: ${REDIS_HOST}
+          - name: MINIO_ENDPOINT
+            value: ${MINIO_ENDPOINT}
+          - name: MINIO_ACCESS_KEY
+            value: ${MINIO_ACCESS_KEY}
+          - name: MINIO_SECRET_KEY
+            value: ${MINIO_SECRET_KEY}
+      
+      - name: entity-constraints-extraction
+        runtime: java:8
+        main: com.qse.actions.EntityConstraintsExtractionAction
+        code: target/qse-openwhisk-1.0-SNAPSHOT.jar
+        memory: 1024
+        timeout: 600000
+        parameters:
+          - name: REDIS_HOST
+            value: ${REDIS_HOST}
+          - name: MINIO_ENDPOINT
+            value: ${MINIO_ENDPOINT}
+          - name: MINIO_ACCESS_KEY
+            value: ${MINIO_ACCESS_KEY}
+          - name: MINIO_SECRET_KEY
+            value: ${MINIO_SECRET_KEY}
+      
+      - name: shapes-extraction
+        runtime: java:8
+        main: com.qse.actions.ShapesExtractionAction
+        code: target/qse-openwhisk-1.0-SNAPSHOT.jar
+        memory: 1024
+        timeout: 600000
+        parameters:
+          - name: REDIS_HOST
+            value: ${REDIS_HOST}
+          - name: MINIO_ENDPOINT
+            value: ${MINIO_ENDPOINT}
+          - name: MINIO_ACCESS_KEY
+            value: ${MINIO_ACCESS_KEY}
+          - name: MINIO_SECRET_KEY
+            value: ${MINIO_SECRET_KEY}
+      
+      - name: clean
+        runtime: java:8
+        main: com.qse.actions.CleanAction
+        code: target/qse-openwhisk-1.0-SNAPSHOT.jar
+        memory: 256
+        timeout: 60000
+        parameters:
+          - name: REDIS_HOST
+            value: ${REDIS_HOST}
+          - name: MINIO_ENDPOINT
+            value: ${MINIO_ENDPOINT}
+          - name: MINIO_ACCESS_KEY
+            value: ${MINIO_ACCESS_KEY}
+          - name: MINIO_SECRET_KEY
+            value: ${MINIO_SECRET_KEY}
+      
+      - name: merge-support
+        runtime: java:8
+        main: com.qse.actions.MergeSupportAction
+        code: target/qse-openwhisk-1.0-SNAPSHOT.jar
+        memory: 512
+        timeout: 300000
+        parameters:
+          - name: REDIS_HOST
+            value: ${REDIS_HOST}
+          - name: MINIO_ENDPOINT
+            value: ${MINIO_ENDPOINT}
+          - name: MINIO_ACCESS_KEY
+            value: ${MINIO_ACCESS_KEY}
+          - name: MINIO_SECRET_KEY
+            value: ${MINIO_SECRET_KEY}
+      
+      - name: merge-cec
+        runtime: java:8
+        main: com.qse.actions.MergeCECAction
+        code: target/qse-openwhisk-1.0-SNAPSHOT.jar
+        memory: 512
+        timeout: 300000
+        parameters:
+          - name: REDIS_HOST
+            value: ${REDIS_HOST}
+          - name: MINIO_ENDPOINT
+            value: ${MINIO_ENDPOINT}
+          - name: MINIO_ACCESS_KEY
+            value: ${MINIO_ACCESS_KEY}
+          - name: MINIO_SECRET_KEY
+            value: ${MINIO_SECRET_KEY}
+      
+      - name: merge-ctp
+        runtime: java:8
+        main: com.qse.actions.MergeCTPAction
+        code: target/qse-openwhisk-1.0-SNAPSHOT.jar
+        memory: 512
+        timeout: 300000
+        parameters:
+          - name: REDIS_HOST
+            value: ${REDIS_HOST}
+          - name: MINIO_ENDPOINT
+            value: ${MINIO_ENDPOINT}
+          - name: MINIO_ACCESS_KEY
+            value: ${MINIO_ACCESS_KEY}
+          - name: MINIO_SECRET_KEY
+            value: ${MINIO_SECRET_KEY}
+      
+      - name: http-trigger
+        runtime: java:8
+        main: com.qse.actions.HttpTriggerAction
+        code: target/qse-openwhisk-1.0-SNAPSHOT.jar
+        web-export: true
+        annotations:
+          web-export: true
+          final: true
+    
+    triggers:
+      - name: qse-trigger
+        source: /whisk.system/github/webhook
+    
+    rules:
+      - name: qse-rule
+        trigger: qse-trigger
+        action: qse/http-trigger
+    
+    sequences:
+      - name: qse-workflow
+        actions:
+          - qse/clean
+          - qse/parallel-extraction
+          - qse/parallel-merge
+          - qse/shapes-extraction
+        web-export: true
